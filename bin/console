@@ -2,10 +2,76 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
-require "activerecord/duckdb/adapter"
+require "activerecord-duckdb-adapter"
+require "active_support/logger"
+require "yaml"
 
 # You can add fixtures and/or initialization code here to make experimenting
 # with your gem easier. You can also use a different console, if you like.
+
+puts "Setting up ActiveRecord DuckDB Adapter console..."
+
+# Setup database connection
+ActiveRecord::Base.logger = ActiveSupport::Logger.new(STDOUT, level: Logger::INFO)
+ActiveRecord::Base.configurations = {
+  'duckdb' => { adapter: 'duckdb' }
+}
+ActiveRecord::Base.establish_connection :duckdb
+
+puts "✓ Database connection established"
+
+# Load the schema
+load File.expand_path("../../test/schema/schema.rb", __FILE__)
+puts "✓ Database schema loaded"
+
+# Load the models
+require File.expand_path("../../test/models/author.rb", __FILE__)
+require File.expand_path("../../test/models/post.rb", __FILE__)
+puts "✓ Models loaded (Author, Post)"
+
+# Set up base directory for file paths
+BASE_DIR = File.expand_path("../../", __FILE__)
+
+# Helper method to load fixtures
+def load_fixtures
+  # Clear existing data
+  Post.delete_all
+  Author.delete_all
+  
+  # Load authors from YAML
+  authors_data = YAML.load_file(File.join(BASE_DIR, "test/fixtures/authors.yml"))
+  authors_data.each do |key, attrs|
+    Author.create!(attrs)
+  end
+  
+  # Load posts from YAML
+  posts_data = YAML.load_file(File.join(BASE_DIR, "test/fixtures/posts.yml"))
+  posts_data.each do |key, attrs|
+    # Skip posts with author_id: 0 as they don't have valid authors
+    next if attrs['author_id'] == 0
+    Post.create!(attrs)
+  end
+  
+  puts "✓ Fixtures loaded: #{Author.count} authors, #{Post.count} posts"
+end
+
+# Load the fixtures
+load_fixtures
+
+puts "\n" + "="*60
+puts "ActiveRecord DuckDB Adapter Console Ready!"
+puts "="*60
+puts "\nAvailable models:"
+puts "  - Author (#{Author.count} records)"
+puts "  - Post (#{Post.count} records)"
+puts "\nExample usage:"
+puts "  Author.all"
+puts "  Post.includes(:author).all"
+puts "  Author.first.posts"
+puts "  Post.where(enabled: true)"
+puts "\nHelper methods:"
+puts "  load_fixtures  # Reload all fixture data"
+puts "\n" + "="*60
 
 # (If you use this, don't forget to add pry to your Gemfile!)
 # require "pry"
