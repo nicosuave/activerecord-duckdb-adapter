@@ -12,3 +12,5 @@
 
 log/
 vendor
+db/
+.DS_Store
