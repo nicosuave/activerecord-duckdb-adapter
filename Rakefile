@@ -11,7 +11,12 @@ Rake::TestTask.new(:test) do |t|
   t.verbose = true
 end
 
-require "rubocop/rake_task"
-
-task default: %i[test rubocop]
+begin
+  require "rubocop/rake_task"
+  RuboCop::RakeTask.new
+  task default: %i[test rubocop]
+rescue LoadError
+  # RuboCop not available, skip it
+  task default: %i[test]
+end
 
