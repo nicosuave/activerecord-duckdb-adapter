@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = "A Ruby gem that provides an ActiveRecord adapter for DuckDB, enabling Ruby and Rails applications to use DuckDB as their database backend."
   spec.homepage      = "https://github.com/red-data-tools/activerecord-duckdb-adapter"
   spec.license       = "MIT"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 2.7.0"
 
   spec.metadata = {
     "bug_tracker_uri" => "https://github.com/red-data-tools/activerecord-duckdb-adapter/issues",
@@ -37,6 +37,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.13"
 
   # Runtime dependencies with bounded versions
-  spec.add_dependency "activerecord", "~> 7.1"
+  spec.add_dependency "activerecord", "~> 6.1"
   spec.add_dependency "duckdb", "~> 1.1"
 end

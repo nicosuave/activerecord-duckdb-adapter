@@ -55,8 +55,8 @@ module ActiveRecord
       # @note Implements AbstractAdapter interface method
       # @param [Array] args Arguments passed to superclass
       # @return [DuckdbAdapter] New adapter instance
-      def initialize(...)
-        super
+      def initialize(connection, logger = nil, config = {})
+        super(connection, logger, config)
         @max_identifier_length = nil
         @type_map = nil
         @raw_connection = self.connect

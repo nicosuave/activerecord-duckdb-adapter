@@ -24,8 +24,8 @@ module ActiveRecord
         # @param [Boolean] allow_retry Whether to allow retry on failure
         # @param [Boolean] materialize_transactions Whether to materialize transactions
         # @return [Object] Query result
-        def internal_execute(sql, name = "SQL", binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true, &block)
-          raw_execute(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry, materialize_transactions: materialize_transactions, &block)
+        def internal_execute(sql, name = "SQL", binds = [], prepare: false, async: false, allow_retry: false, &block)
+          raw_execute(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry, &block)
         end
 
         # @override
@@ -62,8 +62,8 @@ module ActiveRecord
         # @param [Boolean] allow_retry Whether to allow retry on failure
         # @param [Boolean] materialize_transactions Whether to materialize transactions
         # @return [ActiveRecord::Result] Query result as ActiveRecord::Result
-        def internal_exec_query(sql, name = "SQL", binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true)
-          result = internal_execute(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry, materialize_transactions: materialize_transactions)
+        def internal_exec_query(sql, name = "SQL", binds = [], prepare: false, async: false, allow_retry: false)
+          result = internal_execute(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry)
           
           # Convert DuckDB result to ActiveRecord::Result
           raw_cols = result.columns || []
@@ -83,12 +83,11 @@ module ActiveRecord
         # @param [Boolean] materialize_transactions Whether to materialize transactions
         # @param [Boolean] batch Whether to execute in batch mode
         # @return [Object] Query result
-        def raw_execute(sql, name = nil, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true, batch: false)
+        def raw_execute(sql, name = nil, binds = [], prepare: false, async: false, allow_retry: false, batch: false)
           type_casted_binds = type_casted_binds(binds)
           log(sql, name, binds, type_casted_binds, async: async) do |notification_payload|
-            with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
-              perform_query(conn, sql, binds, type_casted_binds, prepare: prepare, notification_payload: notification_payload, batch: batch)
-            end
+            # Rails 6.1 doesn't have with_raw_connection, use @raw_connection directly
+            perform_query(@raw_connection, sql, binds, type_casted_binds, prepare: prepare, notification_payload: notification_payload, batch: batch)
           end
         end
 
@@ -232,10 +231,12 @@ module ActiveRecord
         # @note get Arel visitor for SQL generation
         # @return [Object] Arel visitor instance
         def arel_visitor
-          connection_pool.get_schema_cache(connection).arel_visitor
-        rescue
-          # Fallback for older ActiveRecord versions or if schema cache is not available
-          Arel::Visitors::ToSql.new(self)
+          # Rails 6.1 accesses arel visitor differently
+          if respond_to?(:schema_cache) && schema_cache
+            schema_cache.arel_visitor
+          else
+            Arel::Visitors::ToSql.new(self)
+          end
         end
 
         # @override
