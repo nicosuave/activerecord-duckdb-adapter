@@ -231,12 +231,8 @@ module ActiveRecord
         # @note get Arel visitor for SQL generation
         # @return [Object] Arel visitor instance
         def arel_visitor
-          # Rails 6.1 accesses arel visitor differently
-          if respond_to?(:schema_cache) && schema_cache
-            schema_cache.arel_visitor
-          else
-            Arel::Visitors::ToSql.new(self)
-          end
+          # Rails 6.1 doesn't have arel_visitor on schema_cache
+          @arel_visitor ||= Arel::Visitors::ToSql.new(self)
         end
 
         # @override
