@@ -30,7 +30,12 @@ module ActiveRecord
         # @param [Hash, nil] config Configuration hash containing database path
         # @return [DuckDB::Connection] A new DuckDB connection
         def new_client(config = nil)
-          database_path = config&.dig(:database) || 'db/duckdb.db'
+          # Handle different config formats (hash with string or symbol keys)
+          database_path = if config
+            config[:database] || config['database'] || 'db/duckdb.db'
+          else
+            'db/duckdb.db'
+          end
           
           if database_path == ':memory:'
             DuckDB::Database.open.connect # in-memory database
@@ -56,10 +61,13 @@ module ActiveRecord
       # @param [Array] args Arguments passed to superclass
       # @return [DuckdbAdapter] New adapter instance
       def initialize(connection, logger = nil, config = {})
+        # Create a mutable copy of the config to avoid FrozenError
+        config = config.dup
         super(connection, logger, config)
         @max_identifier_length = nil
         @type_map = nil
-        @raw_connection = self.connect
+        # Use the provided connection if it's a DuckDB connection, otherwise create a new one
+        @raw_connection = connection.is_a?(DuckDB::Connection) ? connection : self.connect
         @notice_receiver_sql_warnings = []
 
         # Determine if we're using a memory database

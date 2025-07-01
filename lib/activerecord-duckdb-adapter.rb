@@ -5,17 +5,21 @@ require "activerecord_duckdb_adapter/version"
 require "active_record/connection_adapters/duckdb_adapter"
 
 # Register the adapter with ActiveRecord
-if ActiveRecord::ConnectionAdapters.respond_to?(:register)
-  ActiveRecord::ConnectionAdapters.register("duckdb", "ActiveRecord::ConnectionAdapters::DuckdbAdapter", "active_record/connection_adapters/duckdb_adapter")
-else
-  # For older ActiveRecord versions, define the connection method manually
-  module ActiveRecord
-    module ConnectionHandling # :nodoc:
-      def duckdb_connection(config)
-        ActiveRecord::ConnectionAdapters::DuckdbAdapter.new(config)
-      end
+# Always define the connection method to ensure proper handling of configuration
+module ActiveRecord
+  module ConnectionHandling # :nodoc:
+    def duckdb_connection(config)
+      # Create the connection first using the adapter's new_client method
+      connection = ActiveRecord::ConnectionAdapters::DuckdbAdapter.new_client(config)
+      # Then create the adapter with the connection and config
+      ActiveRecord::ConnectionAdapters::DuckdbAdapter.new(connection, nil, config)
     end
   end
+end
+
+# Also register with the new method if available
+if ActiveRecord::ConnectionAdapters.respond_to?(:register)
+  ActiveRecord::ConnectionAdapters.register("duckdb", "ActiveRecord::ConnectionAdapters::DuckdbAdapter", "active_record/connection_adapters/duckdb_adapter")
 end
 
 # Register database tasks (this might not be needed in newer versions)
